@@ -1,0 +1,18 @@
+services:
+  homeboard:
+    build: .
+    ports:
+      - "${HOMEBOARD_BIND_IP:-127.0.0.1}:${HOMEBOARD_PORT:-8091}:8091"
+    environment:
+      WALKING_MINUTES: ${WALKING_MINUTES:-1}
+      DRESSING_MINUTES: ${DRESSING_MINUTES:-10}
+      SHOES_MINUTES: ${SHOES_MINUTES:-3}
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

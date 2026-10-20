@@ -194,3 +194,21 @@ Start by reviewing these requirements and proposing:
 Prioritize getting a basic Homeboard dashboard running locally and establishing whether the LG television can be controlled reliably.
 
 **Do not start implementing all integrations immediately. First agree on the MVP scope and technical approach.**
+
+
+## Morning Routine Clarification
+
+The primary use is preparing children for school and kindergarten in the morning.
+The bus stop is directly outside the house; getting dressed takes the most time.
+
+- All family-facing UI text must be Czech.
+- Minimize text and prioritize recognizable pictures for children who cannot read.
+- Make the current time and time until the bus especially prominent.
+- Show distinct visual stages: spare time, getting dressed, putting shoes on,
+  and leaving with an adult.
+- Use configurable durations for dressing, shoes and the short walk separately.
+- Convey the stage through a large illustration and position/highlighting, not
+  color or written instructions alone.
+- Show time passing visually; retain numbers for adults and older children.
+- Keep school and calendar content secondary to the morning routine.
+- Validate recognition and readability with the children on the actual TV.

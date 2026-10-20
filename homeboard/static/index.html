@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homeboard · Dobré ráno</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header><div class="brand">homeboard <span>Dobré ráno!</span></div><span class="demo">UKÁZKA · Smyšlené odjezdy</span></header>
+  <main>
+    <section class="morning" aria-label="Ranní příprava">
+      <div class="time-panel">
+        <p id="date">Dnes</p>
+        <time id="clock" aria-label="Aktuální čas">—</time>
+        <svg class="analog" viewBox="0 0 200 200" role="img" aria-label="Ručičkové hodiny">
+          <circle cx="100" cy="100" r="90" fill="#203d35" stroke="#789c8a" stroke-width="3"/>
+          <g stroke="#b7cbbc" stroke-width="4"><path d="M100 20v12m0 136v12M20 100h12m136 0h12M60 31l6 10m68 118 6 10M31 60l10 6m118 68 10 6M31 140l10-6m118-68 10-6M60 169l6-10m68-118 6-10"/></g>
+          <path id="hour-hand" d="M100 100V56" stroke="#f5e4b1" stroke-width="9" stroke-linecap="round"/>
+          <path id="minute-hand" d="M100 100V34" stroke="#e7eee6" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="7" fill="#f5e4b1"/>
+        </svg>
+      </div>
+      <div id="action" class="action waiting" role="status" aria-live="polite">
+        <span class="now-label">TEĎ</span>
+        <img id="action-icon" src="/static/icons/wait.svg" alt="" width="160" height="160">
+        <h1 id="action-title">Načítání…</h1>
+        <p id="action-detail">Chvilku počkáme</p>
+      </div>
+      <div class="bus-panel">
+        <div class="bus-heading"><img src="/static/icons/bus.svg" alt="" width="64" height="64"><h2>Autobus za</h2></div>
+        <div class="countdown"><strong id="minutes">—</strong><span>min</span></div>
+        <p id="departure">—</p>
+        <div id="time-blocks" class="time-blocks" role="img" aria-label="Čas do odjezdu"></div>
+        <p class="small">Lipová alej → náměstí</p>
+      </div>
+    </section>
+    <ol class="steps" aria-label="Nejdřív pohoda, potom oblékat, obouvat a jdeme">
+      <li id="step-relax"><img src="/static/icons/sun.svg" alt="" width="80" height="80"><span>Máme čas</span><b class="step-marker" aria-hidden="true">●</b></li>
+      <li id="step-dress"><img src="/static/icons/shirt.svg" alt="" width="80" height="80"><span>Oblékat</span><b class="step-marker" aria-hidden="true">●</b></li>
+      <li id="step-shoes"><img src="/static/icons/shoes.svg" alt="" width="80" height="80"><span>Obouvat</span><b class="step-marker" aria-hidden="true">●</b></li>
+      <li id="step-go"><img src="/static/icons/bus.svg" alt="" width="80" height="80"><span>Jdeme!</span><b class="step-marker" aria-hidden="true">●</b></li>
+    </ol>
+    <div id="connection" class="connection" role="status">Načítání ukázky…</div>
+    <div class="family"><section class="card"><h2><img src="/static/icons/book.svg" alt="" width="40" height="40"> Do školy <span class="sample">ukázka</span></h2><div id="homework"></div></section><section class="card"><h2><img src="/static/icons/calendar.svg" alt="" width="40" height="40"> Dnes <span class="sample">ukázka</span></h2><div id="events"></div></section></div>
+  </main>
+  <footer><span>Zastávka před domem</span><span id="updated">Čekáme na data</span></footer>
+  <noscript>Pro zobrazení odpočtu je potřeba zapnout JavaScript.</noscript>
+</body>
+</html>
