@@ -1,0 +1,129 @@
+"""Synthetic public-board fixtures; no external requests in tests."""
+
+import asyncio
+from datetime import datetime
+
+import httpx
+import pytest
+
+from homeboard.integrations.ideska import IdeskaProvider, parse_board
+from homeboard.integrations.models import TransportData
+from homeboard.providers import PRAGUE
+
+NOW = datetime(2026, 10, 20, 7, 38, tzinfo=PRAGUE)
+
+
+def row(line="45", clock="07:34", delay="10", destination="Planá n.Luž.,Strkov"):
+    return f"""<div class="timetable-row">
+    <div class="timetable-item"><div class="timetable-value"><div>{line}</div></div></div>
+    <div class="timetable-item"><div class="timetable-value">{destination}</div></div>
+    <div class="timetable-item"></div>
+    <div class="timetable-item"><div class="timetable-value">{clock}</div></div>
+    <div class="timetable-item"></div>
+    <div class="timetable-item"><div class="timetable-value">{delay}</div></div>
+    </div>"""
+
+
+def board(rows):
+    return '<span class="box-title">Planá n.Luž.,Nad Hejtmanem Lipová alej</span>' + rows
+
+
+def test_delayed_departure_survives_scheduled_time_and_is_sorted():
+    data = parse_board(board(row() + row("43", "07:40", "0")), NOW)
+    model = TransportData.model_validate(data)
+    assert [d.minute for d in model.departures] == [40, 44]
+    detail = model.departure_details[model.departures[1].isoformat()]
+    assert detail.scheduled_at.minute == 34
+    assert detail.delay_minutes == 10
+
+
+def test_missing_delay_is_not_zero_or_live():
+    data = parse_board(board(row(clock="07:40", delay="")), NOW)
+    assert next(iter(data["departure_details"].values()))["delay_minutes"] is None
+
+
+def test_other_direction_and_line_are_excluded():
+    assert not parse_board(board(row(destination="Tábor") + row(line="42")), NOW)["departures"]
+
+
+@pytest.mark.parametrize("delay", ["?", "999", "-10"])
+def test_unrecognized_delay_rejected(delay):
+    with pytest.raises(ValueError):
+        parse_board(board(row(delay=delay)), NOW)
+
+
+def test_wrong_stop_rejected():
+    with pytest.raises(ValueError):
+        parse_board(board(row()).replace("Lipová alej", "jiná"), NOW)
+
+
+def test_midnight_requires_dated_fallback():
+    with pytest.raises(ValueError):
+        parse_board(board(row()), NOW.replace(hour=23))
+
+
+def test_departed_bus_removed():
+    assert not parse_board(board(row(delay="0")), NOW)["departures"]
+
+
+def test_network_failure_uses_schedule(monkeypatch):
+    async def fail(*args, **kwargs):
+        raise httpx.ConnectError("Offline")
+
+    async def fallback(now):
+        return {"fallback": True}
+
+    provider = IdeskaProvider()
+    monkeypatch.setattr(httpx.AsyncClient, "post", fail)
+    monkeypatch.setattr(provider.fallback, "fetch", fallback)
+    assert asyncio.run(provider.fetch(NOW)) == {"fallback": True}
+
+
+def test_verified_public_request_and_response(monkeypatch):
+    async def post(client, url, **kwargs):
+        import json
+
+        assert url == "https://www.mpvnet.cz/jikord/tab/departures"
+        assert json.loads(kwargs["json"]["StopKey"])["stopNum"] == 62683
+        assert kwargs["json"]["isDepartures"] is True
+        return httpx.Response(200, text=board(row()), request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", post)
+    result = asyncio.run(IdeskaProvider().fetch(NOW))
+    from homeboard.domain import countdown, morning_routine
+
+    departure = datetime.fromisoformat(result["departures"][0])
+    assert countdown(departure, NOW, 1, 13)["departure_minutes"] == 6
+    assert morning_routine(departure, 10, 3, 1)
+
+
+def test_invalid_board_uses_schedule(monkeypatch):
+    async def post(client, url, **kwargs):
+        return httpx.Response(
+            200, text="<html>Maintenance</html>", request=httpx.Request("POST", url)
+        )
+
+    async def fallback(now):
+        return {"fallback": True}
+
+    provider = IdeskaProvider()
+    monkeypatch.setattr(httpx.AsyncClient, "post", post)
+    monkeypatch.setattr(provider.fallback, "fetch", fallback)
+    assert asyncio.run(provider.fetch(NOW)) == {"fallback": True}
+
+
+def test_position_failure_keeps_departure_estimate(monkeypatch):
+    async def post(client, url, **kwargs):
+        if url.endswith("/mapData"):
+            raise httpx.ReadTimeout("GPS unavailable")
+        html = board(row()).replace(
+            "<div>45</div>", '<div>45</div><div class="timetable-direction">1</div>'
+        )
+        return httpx.Response(200, text=html, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx.AsyncClient, "post", post)
+    result = asyncio.run(IdeskaProvider().fetch(NOW))
+    detail = next(iter(result["departure_details"].values()))
+    assert detail["trip"] == "1"
+    assert detail["delay_minutes"] == 10
+    assert detail["progress"] is None

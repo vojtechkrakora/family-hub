@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -6,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from homeboard.domain import countdown, morning_routine
 from homeboard.main import create_app
-from homeboard.providers import MockProvider
+from homeboard.providers import MockTransportProvider
 
 PRAGUE = ZoneInfo("Europe/Prague")
 
@@ -56,13 +57,13 @@ def test_invalid_config(monkeypatch, value):
 
 
 def test_mock_departure_stays_fixed_and_rolls_over():
-    provider = MockProvider()
+    provider = MockTransportProvider()
     now = datetime(2026, 10, 20, 23, 59, tzinfo=PRAGUE)
-    first = provider.snapshot(now)
-    assert first["transport"]["departures"][0] == "2026-10-21T00:00:00+02:00"
-    assert provider.snapshot(now + timedelta(seconds=10))["transport"] == first["transport"]
+    first = asyncio.run(provider.fetch(now))
+    assert first["departures"][0].isoformat() == "2026-10-21T00:00:00+02:00"
+    assert asyncio.run(provider.fetch(now + timedelta(seconds=10))) == first
     assert (
-        provider.snapshot(now + timedelta(minutes=1))["transport"]["departures"][0]
+        asyncio.run(provider.fetch(now + timedelta(minutes=1)))["departures"][0].isoformat()
         == "2026-10-21T00:15:00+02:00"
     )
 
@@ -70,15 +71,15 @@ def test_mock_departure_stays_fixed_and_rolls_over():
 def test_http_dashboard_and_assets(monkeypatch):
     monkeypatch.setenv("WALKING_MINUTES", "7")
     with TestClient(create_app()) as client:
-        assert client.get("/health").json() == {"status": "ok", "mode": "mock"}
-        assert "UKÁZKA · Smyšlené odjezdy" in client.get("/").text
+        assert client.get("/health").json() == {"status": "ok"}
+        assert 'lang="cs"' in client.get("/").text
         for asset in ["style.css", "app.js"]:
             assert client.get("/static/" + asset).status_code == 200
         response = client.get("/api/dashboard")
         assert response.status_code == 200
         assert response.headers["cache-control"] == "no-store"
         data = response.json()
-        assert data["source"] == "mock"
+        assert data["integrations"]["transport"]["source"] == "mock"
         assert data["walking_minutes"] == 7
         assert data["dressing_minutes"] == 10
         assert data["shoes_minutes"] == 3
@@ -87,18 +88,6 @@ def test_http_dashboard_and_assets(monkeypatch):
         assert len(data["transport"]["departures"]) == 3
         assert data["transport"]["delay_minutes"] is None
         assert client.post("/api/dashboard").status_code == 405
-
-
-def test_provider_failure_does_not_leak_secrets():
-    class BrokenProvider:
-        def snapshot(self, now):
-            raise RuntimeError("secret-token")
-
-    with TestClient(create_app(BrokenProvider())) as client:
-        response = client.get("/api/dashboard")
-        assert response.status_code == 503
-        assert "secret-token" not in response.text
-        assert client.get("/health").status_code == 200
 
 
 @pytest.mark.parametrize(

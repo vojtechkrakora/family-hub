@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Homeboard · Dobré ráno</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="/static/app.js" defer></script>
+  <link rel="stylesheet" href="/static/style.css?v=agenda-4">
+  <script src="/static/minimap.js" defer></script>
+  <script src="/static/app.js?v=agenda-4" defer></script>
 </head>
 <body>
-  <header><div class="brand">homeboard <span>Dobré ráno!</span></div><span class="demo">UKÁZKA · Smyšlené odjezdy</span></header>
+  <header><div class="brand">homeboard <span>Dobré ráno!</span></div><span id="transport-source" class="demo">Načítání zdroje odjezdů</span></header>
   <main>
     <section class="morning" aria-label="Ranní příprava">
       <div class="time-panel">
@@ -29,12 +30,29 @@
         <p id="action-detail">Chvilku počkáme</p>
       </div>
       <div class="bus-panel">
-        <div class="bus-heading"><img src="/static/icons/bus.svg" alt="" width="64" height="64"><h2>Autobus za</h2></div>
-        <div class="countdown"><strong id="minutes">—</strong><span>min</span></div>
+        <div class="bus-heading"><img src="/static/icons/bus.svg" alt="" width="64" height="64"><h2>Autobus <b id="bus-line"></b> za</h2></div>
+        <div class="countdown"><strong id="minutes">—</strong><span id="countdown-unit">min</span></div>
         <p id="departure">—</p>
+        <p id="bus-progress" class="bus-progress" role="status">Poloha není dostupná</p>
         <div id="time-blocks" class="time-blocks" role="img" aria-label="Čas do odjezdu"></div>
-        <p class="small">Lipová alej → náměstí</p>
+        <p id="transport-route" class="small">Lipová alej · linky 43 a 45</p><p id="following" class="small"></p>
       </div>
+      <aside class="map-panel" aria-label="Poloha autobusu">
+        <svg id="minimap" viewBox="0 0 400 600" role="img" aria-label="Pevná mapa autobusu, přejezdu a zastávky" xmlns:xlink="http://www.w3.org/1999/xlink" data-west="14.690" data-east="14.737" data-north="49.380" data-south="49.334">
+          <image xlink:href="/static/minimap.svg?v=6303902d7d81" width="400" height="600"/>
+          <g id="map-bus" visibility="hidden">
+            <circle r="25" fill="#f5c665" stroke="#101f1a" stroke-width="4"/>
+            <image xlink:href="/static/icons/bus.svg" x="-18" y="-18" width="36" height="36"/>
+          </g>
+        </svg>
+        <div class="map-legend" aria-label="Legenda mapy">
+          <span><img src="/static/icons/bus.svg" alt="" width="32" height="32">Autobus</span>
+          <span><img src="/static/icons/crossing.svg" alt="" width="32" height="32">Přejezd</span>
+          <span><img src="/static/icons/stop.svg" alt="" width="32" height="32">Naše zastávka</span>
+        </div>
+        <p id="map-status">Poloha není dostupná</p>
+        <a class="map-credit" href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
+      </aside>
     </section>
     <ol class="steps" aria-label="Nejdřív pohoda, potom oblékat, obouvat a jdeme">
       <li id="step-relax"><img src="/static/icons/sun.svg" alt="" width="80" height="80"><span>Máme čas</span><b class="step-marker" aria-hidden="true">●</b></li>
@@ -43,9 +61,9 @@
       <li id="step-go"><img src="/static/icons/bus.svg" alt="" width="80" height="80"><span>Jdeme!</span><b class="step-marker" aria-hidden="true">●</b></li>
     </ol>
     <div id="connection" class="connection" role="status">Načítání ukázky…</div>
-    <div class="family"><section class="card"><h2><img src="/static/icons/book.svg" alt="" width="40" height="40"> Do školy <span class="sample">ukázka</span></h2><div id="homework"></div></section><section class="card"><h2><img src="/static/icons/calendar.svg" alt="" width="40" height="40"> Dnes <span class="sample">ukázka</span></h2><div id="events"></div></section></div>
+    <div class="family"><section class="card"><h2><img src="/static/icons/book.svg" alt="" width="40" height="40"> Do školy <span id="school-status" class="sample">Načítání</span></h2><div id="homework"></div></section><section class="card"><h2><img src="/static/icons/calendar.svg" alt="" width="40" height="40"> Dnes <span id="calendar-status" class="sample">Načítání</span></h2><div id="events"></div></section></div>
   </main>
-  <footer><span>Zastávka před domem</span><span id="updated">Čekáme na data</span></footer>
+  <footer><span>Zastávka před domem · <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></span><span id="updated">Čekáme na data</span></footer>
   <noscript>Pro zobrazení odpočtu je potřeba zapnout JavaScript.</noscript>
 </body>
 </html>

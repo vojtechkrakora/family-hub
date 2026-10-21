@@ -212,3 +212,13 @@ The bus stop is directly outside the house; getting dressed takes the most time.
 - Show time passing visually; retain numbers for adults and older children.
 - Keep school and calendar content secondary to the morning routine.
 - Validate recognition and readability with the children on the actual TV.
+
+
+## Confirmed Transportation Selection
+
+Use the stop Planá nad Lužnicí, Nad Hejtmanem Lipová alej and consider both lines
+43 and 45. The usual weekday trip is line 45 at approximately 07:34, confirmed
+against the published timetable during implementation. Always select the nearest
+eligible departure across both lines, not a fixed morning departure. Show the
+line number. Published stop pages label the direction Strkov; do not claim onward
+travel to náměstí without separately verifying that connection.

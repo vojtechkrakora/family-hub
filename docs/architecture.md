@@ -8,34 +8,31 @@ requirements. Serving assets via FastAPI follows its documented
 [StaticFiles pattern](https://fastapi.tiangolo.com/tutorial/static-files/).
 There is no frontend build step, external CDN or client-side credential.
 
-`DashboardProvider` isolates data retrieval; `MockProvider` supplies fictional
-examples. Countdown logic accepts aware timestamps and compares UTC timestamps,
-so elapsed time stays correct across Prague DST transitions. The browser derives
-Prague wall time from the response offset and refreshes that offset with each
-snapshot. A failed request suppresses actionable countdowns until recovery.
-The server returns rounded countdown metadata and absolute morning-stage boundaries;
-the browser selects the current stage from those boundaries and ticks between
-responses. Separate dressing, shoes and walking settings define the preparation
-window. All family-facing content is Czech. Local SVG pictograms avoid dependence
-on platform emoji fonts. A large current-action image and a marked step reinforce
-color changes; neutral waiting replaces activity prompts on stale data.
+Independent async providers supply transport, school and calendar data through
+validated internal schemas. A per-source cache coordinates refresh, a per-source
+deadline (seven seconds for transport/school, 25 seconds for calendar) and retry backoff. Failures are isolated; the browser receives per-source
+availability, provenance and last successful sync metadata. See `integrations.md`
+for contracts, operational limits and verified research references.
 
-The initial provider supplies a whole demo snapshot. When real integrations are
-introduced, split the adapter boundary by integration and track each source's
-last successful sync independently. This POC returns 503 for a provider failure;
-it does not yet isolate a failing school integration from a working bus provider.
+Countdown logic compares aware timestamps in UTC, preserving elapsed time across
+Prague DST changes. The server computes absolute morning-stage boundaries; the
+browser ticks locally between snapshots. Stale transport data never generates a
+routine. Empty departure lists and disabled providers produce a neutral waiting
+state while other dashboard sections remain visible.
+
+All family-facing content is Czech. Local SVG pictograms avoid platform emoji
+fonts. A large current-action image and marked step reinforce color changes.
 
 The container runs as a non-root user with a read-only filesystem. Compose binds
 to loopback by default. This POC has only GET endpoints and synthetic data.
-Provider errors emit a JSON event without exception contents to avoid accidental
-secret disclosure. Uvicorn access logs retain their standard format; full
+Provider errors emit a JSON event containing only the integration identifier. Uvicorn access logs retain their standard format; full
 structured request logging is deferred.
 
 ## Deliberately deferred
 
-SQLite, credentials, real API clients, durable caching, scheduling, school-day
-rules, TV control and authentication are not implemented. In-memory browser
-retention demonstrates loss-of-connection behavior but is not persistent caching.
+SQLite, credentials, school/calendar clients, durable caching, scheduling, school-day
+rules, TV control and authentication are not implemented. Server caches and
+browser retention are in memory only and do not survive restarts.
 Dependencies use bounded ranges; a fully locked deployment is a hardening task.
 
 ## Validation risks
@@ -49,5 +46,36 @@ Dependencies use bounded ranges; a fully locked deployment is a hardening task.
 | Unofficial school API and credential expiry | Verify against the school's endpoint with securely supplied credentials |
 | Calendar privacy | Select ICS or Google authorization and store credentials server-side |
 
-There are no verified claims of TV control, live bus tracking or production
+The IDESKA adapter reads the verified public departure board, adding reported
+delay to scheduled time. Per-departure metadata distinguishes estimates from
+schedules. It falls back to COMETT on unavailable or ambiguous board data.
+The COMETT adapter reads verified public stop-timetable HTML; it is not a live
+vehicle feed or a documented API. Both lines must succeed before generating a
+routine. Refer to `integrations.md` for supported calendar rules and limitations.
+
+There are no verified claims of TV control or production
 reliability. The repository contains no real family records or credentials.
+
+GPS progress is an optional enrichment of the selected IDESKA departure. A small
+in-memory tracker infers crossing dwell and passage from fresh matched fixes;
+no vehicle registry or location history is persisted. See integration notes for
+geography attribution, thresholds and practical validation still needed.
+
+The fixed SVG minimap is a local static asset with a small ES5 marker renderer.
+It reuses normalized selected-trip GPS and polling, requires no map library or
+external tile requests, and keeps display-only stale coordinates separate from
+verified preparation state.
+
+Bakaláři is an optional read-only provider with an in-memory token lifecycle and
+strict normalized homework contract. Its activation also enables dashboard HTTP
+Basic access control; credentials are loaded from protected local JSON or server
+environment, never from frontend requests. School failures remain isolated from
+transport and calendar. Public reachability, household login, normalized homework and browser access
+protection were verified on 2026-10-20. Credentials remain in local configuration.
+
+Google Calendar uses read-only private ICS feeds, normalized by maintained ICS and
+recurrence libraries in a disposable parser process. That process is local work
+with a deadline, not a separate deployed service. The existing authenticated
+dashboard displays a Prague-local daily agenda, including events overlapping
+midnight. Source URLs stay in protected server configuration. Live household feed
+retrieval and authenticated rendering were verified on 2026-10-21 with three feeds.

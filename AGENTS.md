@@ -194,6 +194,8 @@ At the end of each task, provide:
 - If the intended port is occupied, choose another unused port for Homeboard.
 - Never stop, restart, remove or replace another project's process or container to free a port.
 - Only stop processes positively identified as belonging to Homeboard.
+- When `.local/bakalari.json` exists, deploy with `python3 scripts/start_homeboard.py` to preserve the live school/calendar sources and dashboard protection. The helper includes `.local/calendar.json` when present. Plain Compose recreation without its environment would revert to mocks.
+- Never print the local school configuration or full container environment.
 
 ## 12. Working with AI-Generated Code
 
