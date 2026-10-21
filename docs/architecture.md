@@ -30,8 +30,8 @@ structured request logging is deferred.
 
 ## Deliberately deferred
 
-SQLite, credentials, school/calendar clients, durable caching, scheduling, school-day
-rules, TV control and authentication are not implemented. Server caches and
+SQLite, durable caching, scheduling, school-day rules and TV control are not
+implemented. Server caches and
 browser retention are in memory only and do not survive restarts.
 Dependencies use bounded ranges; a fully locked deployment is a hardening task.
 
@@ -68,7 +68,7 @@ verified preparation state.
 
 Bakaláři is an optional read-only provider with an in-memory token lifecycle and
 strict normalized homework contract. Its activation also enables dashboard HTTP
-Basic access control; credentials are loaded from protected local JSON or server
+optional Basic access control; credentials are loaded from protected local JSON or server
 environment, never from frontend requests. School failures remain isolated from
 transport and calendar. Public reachability, household login, normalized homework and browser access
 protection were verified on 2026-10-20. Credentials remain in local configuration.
@@ -87,3 +87,10 @@ root with only `DAC_OVERRIDE` so it can read File Station-created private files;
 its filesystem is read-only. Secrets are not in the container environment or
 build context. Local Docker continues to use the existing helper. See
 `docs/synology.md` for project creation instructions.
+The Synology definition is self-contained: it publishes host port 8091 on all
+NAS interfaces and uses literal defaults, independent of local `.env` files.
+It explicitly sets `HOMEBOARD_AUTH_MODE=disabled` for the household TV, allowing
+page, asset and API access without a browser login. The application defaults to
+`disabled` everywhere and rejects unknown modes. Basic login requires an explicit
+`HOMEBOARD_AUTH_MODE=basic` setting. Private responses remain no-store
+in both modes; integration credentials never leave the server.

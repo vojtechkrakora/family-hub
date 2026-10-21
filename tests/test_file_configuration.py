@@ -43,7 +43,8 @@ def private_files(tmp_path, monkeypatch):
     return school, calendar
 
 
-def test_file_only_configuration_retains_auth_on_recreation(private_files):
+def test_file_only_configuration_retains_auth_on_recreation(private_files, monkeypatch):
+    monkeypatch.setenv("HOMEBOARD_AUTH_MODE", "basic")
     for _ in range(2):
         with TestClient(create_app()) as client:
             assert client.get("/health").status_code == 200
@@ -53,6 +54,39 @@ def test_file_only_configuration_retains_auth_on_recreation(private_files):
                 client.get("/", auth=("homeboard", "synthetic-dashboard-password")).status_code
                 == 200
             )
+
+
+@pytest.mark.parametrize("mode", [None, "disabled"])
+def test_lan_mode_serves_tv_and_api_without_login(private_files, monkeypatch, mode):
+    from homeboard.integrations.bakalari import BakalariProvider
+    from homeboard.integrations.google_calendar import GoogleCalendarProvider
+
+    async def school(self, now):
+        return {"homework": []}
+
+    async def calendar(self, now):
+        return {"events": []}
+
+    if mode is not None:
+        monkeypatch.setenv("HOMEBOARD_AUTH_MODE", mode)
+    monkeypatch.setattr(BakalariProvider, "fetch", school)
+    monkeypatch.setattr(GoogleCalendarProvider, "fetch", calendar)
+    with TestClient(create_app()) as client:
+        for path in ("/", "/static/app.js", "/static/minimap.js", "/api/dashboard"):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert "www-authenticate" not in response.headers
+            assert response.headers["cache-control"] == "no-store"
+            assert "synthetic-dashboard-password" not in response.text
+            assert "synthetic-school-password" not in response.text
+            assert "calendar.google.com/calendar/ical/synthetic" not in response.text
+        assert client.get("/api/dashboard").json()["integrations"]["school"]["source"] == "live"
+
+
+def test_unknown_auth_mode_fails_closed(monkeypatch):
+    monkeypatch.setenv("HOMEBOARD_AUTH_MODE", "disable")
+    with pytest.raises(ValueError, match="HOMEBOARD_AUTH_MODE"):
+        create_app()
 
 
 @pytest.mark.parametrize("index", [0, 1])

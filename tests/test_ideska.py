@@ -57,9 +57,45 @@ def test_wrong_stop_rejected():
         parse_board(board(row()).replace("Lipová alej", "jiná"), NOW)
 
 
-def test_midnight_requires_dated_fallback():
-    with pytest.raises(ValueError):
-        parse_board(board(row()), NOW.replace(hour=23))
+@pytest.mark.parametrize("hour", [0, 2, 21, 22, 23])
+def test_live_board_has_no_hour_of_day_cutoff(hour):
+    now = NOW.replace(hour=hour, minute=10)
+    data = parse_board(board(row(clock=f"{hour:02}:20", delay="0")), now)
+    assert datetime.fromisoformat(data["departures"][0]) == now.replace(minute=20)
+
+
+def test_next_day_departure_before_midnight():
+    now = NOW.replace(hour=23, minute=55)
+    data = parse_board(board(row(clock="00:10", delay="0")), now)
+    assert data["departures"] == ["2026-10-21T00:10:00+02:00"]
+
+
+def test_delayed_previous_day_departure_after_midnight():
+    now = NOW.replace(hour=0, minute=5)
+    data = parse_board(board(row(clock="23:55", delay="20")), now)
+    assert data["departures"] == ["2026-10-20T00:15:00+02:00"]
+    assert next(iter(data["departure_details"].values()))["scheduled_at"].startswith("2026-10-19")
+
+
+def test_distant_undated_departure_is_not_guessed():
+    assert not parse_board(board(row(clock="07:34", delay="0")), NOW.replace(hour=23))["departures"]
+
+
+@pytest.mark.parametrize(
+    "now",
+    [
+        datetime(2026, 3, 29, 1, 50, tzinfo=PRAGUE),
+        datetime(2026, 10, 25, 1, 50, tzinfo=PRAGUE),
+    ],
+)
+def test_nonexistent_or_ambiguous_dst_time_is_not_guessed(now):
+    assert not parse_board(board(row(clock="02:30", delay="0")), now)["departures"]
+
+
+def test_delay_uses_elapsed_minutes_across_dst():
+    now = datetime(2026, 3, 29, 1, 55, tzinfo=PRAGUE)
+    data = parse_board(board(row(clock="01:50", delay="20")), now)
+    assert data["departures"] == ["2026-03-29T03:10:00+02:00"]
 
 
 def test_departed_bus_removed():
@@ -127,3 +163,46 @@ def test_position_failure_keeps_departure_estimate(monkeypatch):
     assert detail["trip"] == "1"
     assert detail["delay_minutes"] == 10
     assert detail["progress"] is None
+
+
+def test_evening_departure_fetches_and_matches_live_gps(monkeypatch):
+    from homeboard.integrations import ideska
+
+    now = NOW.replace(hour=21, minute=26)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now
+
+    async def post(client, url, **kwargs):
+        request = httpx.Request("POST", url)
+        if url.endswith("/mapData"):
+            return httpx.Response(
+                200,
+                request=request,
+                json={
+                    "transmitters": [
+                        {
+                            "cat": 2,
+                            "cn": "395045|45|81|Planá n.Luž.,Strkov|0|Planá n.Luž.,Okružní bytovky|0|0|Tábor|Planá n.Luž.,Strkov",
+                            "dt": now.strftime("%d.%m.%Y"),
+                            "tm": now.strftime("%H:%M:%S"),
+                            "x": 49.34251,
+                            "y": 14.71661,
+                        }
+                    ]
+                },
+            )
+        html = board(row(clock="21:29", delay="")).replace(
+            "<div>45</div>", '<div>45</div><div class="timetable-direction">81</div>'
+        )
+        return httpx.Response(200, text=html, request=request)
+
+    monkeypatch.setattr(ideska, "datetime", Clock)
+    monkeypatch.setattr(httpx.AsyncClient, "post", post)
+    result = asyncio.run(IdeskaProvider().fetch(now))
+    detail = result["departure_details"][result["departures"][0]]
+    assert detail["trip"] == "81"
+    assert detail["progress"]["latitude"] == 49.34251
+    assert detail["progress"]["longitude"] == 14.71661

@@ -98,9 +98,14 @@ preparation follows the estimate. This cannot predict when railway barriers open
 the countdown can move as new delay reports arrive. Actual stop arrival versus
 departure and real-world accuracy still need morning observation on site.
 
-On board error, empty matching services, or outside 03:00–21:00 Prague time,
+On board error or empty matching services,
 the adapter uses COMETT and labels the result as schedule without live delay.
-The overnight restriction avoids guessing dates from the board's clock-only times.
+There is no time-of-day cutoff for live departures or GPS. Clock-only times are
+resolved against yesterday, today and tomorrow in Europe/Prague, including the
+reported delay as elapsed minutes. Exactly one future instant within six hours
+must fit; distant, nonexistent or ambiguous DST times are omitted. If none remain,
+the dated COMETT timetable is used. The GPS tracker uses the scheduled departure
+timestamp in its trip key, so crossing midnight does not reset the selected trip.
 If both sources fail, cached data is marked stale and action countdowns disappear.
 The 7-second transport deadline includes fallback. Departure-board freshness beyond retrieval time is not verifiable. The separate
 GPS feed now provides its own observation time; see below. A local fixed SVG minimap now renders this selected position.

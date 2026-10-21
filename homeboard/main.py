@@ -59,6 +59,9 @@ def configured_provider(
 
 
 def create_app(integrations: dict[str, CachedIntegration] | None = None) -> FastAPI:
+    auth_mode = os.environ.get("HOMEBOARD_AUTH_MODE", "disabled")
+    if auth_mode not in {"basic", "disabled"}:
+        raise ValueError("HOMEBOARD_AUTH_MODE must be basic or disabled")
     app = FastAPI(title="Homeboard", docs_url=None, redoc_url=None)
     school_settings = (
         load_settings()
@@ -81,7 +84,7 @@ def create_app(integrations: dict[str, CachedIntegration] | None = None) -> Fast
                 )
             except (ValueError, binascii.Error):
                 pass
-            if request.url.path != "/health" and not authorized:
+            if auth_mode == "basic" and request.url.path != "/health" and not authorized:
                 return Response(
                     "Přihlaste se do Homeboardu.",
                     status_code=401,

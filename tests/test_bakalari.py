@@ -161,6 +161,7 @@ def test_no_redirects_or_credentials_forwarded():
 
 
 def test_dashboard_auth_before_school_fetch(monkeypatch):
+    monkeypatch.setenv("HOMEBOARD_AUTH_MODE", "basic")
     monkeypatch.setenv("SCHOOL_SOURCE", "bakalari")
     monkeypatch.setenv("BAKALARI_CONFIG_JSON", json.dumps(CONFIG))
 

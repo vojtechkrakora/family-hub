@@ -43,15 +43,20 @@ port in the local firewall if needed. Keep the computer awake during the test.
 
 For **Synology Container Manager**, use the standalone `compose.synology.yaml`
 and follow [the Synology setup guide](docs/synology.md). It mounts private JSON
-files read-only and preserves live integrations and dashboard protection across
-recreates, without a startup helper. Set the NAS LAN IP and configure file
-permissions as described in the guide. Actual NAS deployment is not yet verified.
+files read-only and preserves live integrations and the chosen login mode across
+recreates. Upload the complete project and the two private configuration files,
+import the Synology YAML, and build/start. No `.env`, IP substitution, SSH,
+ownership commands or startup helper are needed. Port 8091 is published on the
+NAS network interfaces. Actual NAS deployment is not yet verified.
+The Synology definition sets `HOMEBOARD_AUTH_MODE: disabled` for TV browsers:
+the household dashboard opens without a login. Anyone able to reach the port
+can view it; integration credentials remain on the server.
 
 For a **local demo** without private data, use `compose.yaml`:
 
 ```sh
 cp .env.example .env
-docker compose up --build -d
+SCHOOL_SOURCE=mock CALENDAR_SOURCE=mock docker compose up --build -d
 docker compose ps
 ```
 
@@ -67,6 +72,7 @@ Integration caches remain in memory; private JSON files persist on the host.
 | --- | --- | --- |
 | `HOMEBOARD_BIND_IP` | `127.0.0.1` | Compose host bind address |
 | `HOMEBOARD_PORT` | `8091` | Compose host port |
+| `HOMEBOARD_AUTH_MODE` | `disabled` | Opens directly on the household TV; opt into login with `basic` |
 | `WALKING_MINUTES` | `1` | Time to the stop outside the house, integer 0–120 |
 | `DRESSING_MINUTES` | `10` | Getting dressed, integer 1–120 |
 | `SHOES_MINUTES` | `3` | Putting shoes on, integer 1–120 |
@@ -173,7 +179,7 @@ and `integrations.calendar` metadata with source, status and last successful syn
 Each source can be disabled independently. Unsupported provider names fail at
 startup. Mocks use no credentials or external traffic. The default `ideska` provider reads the public departure board without authentication
 and falls back to the COMETT timetable when needed. See the integration notes for
-the clock-only board limitation outside 03:00–21:00 and unverified GPS freshness.
+clock-only date resolution (a six-hour lookahead across midnight) and GPS freshness.
 School/calendar failure leaves bus countdowns running; stale bus data suppresses
 morning prompts. Empty schedules are handled without a server error.
 
@@ -252,8 +258,9 @@ references and limitations are documented in `docs/integrations.md`.
    rebuilds only Homeboard. Use this helper for subsequent Docker rebuilds with
    school integration enabled. Standard Compose without these settings uses mocks.
    Existing restart policies retain the container's configured environment.
-3. Open the dashboard and log in as `homeboard` using the separate Homeboard
-   password. School credentials are never used in the browser. For local Python
+3. Open the dashboard directly; login is disabled by default for the household TV.
+   If explicitly enabled with `HOMEBOARD_AUTH_MODE=basic`, log in as `homeboard`
+   using the separate Homeboard password. School credentials are never used in the browser. For local Python
    development, set `SCHOOL_SOURCE=bakalari`; the server reads the same local JSON
    (override with `BAKALARI_CONFIG_FILE` if needed).
 
@@ -263,6 +270,11 @@ output in diagnostics. Access to the Docker daemon permits reading its environme
 Keep the default loopback binding; for LAN access, use a trusted HTTPS reverse proxy
 because HTTP Basic authentication over plain HTTP does not encrypt the dashboard
 password. `/health` remains public and contains no household data.
+For the trusted household LAN, `HOMEBOARD_AUTH_MODE=disabled` is the application
+default and requires no YAML changes. This disables the browser login for the page,
+assets and API while retaining no-store responses and server-side credentials.
+The existing private JSON files need no changes; their dashboard password field
+is retained for compatibility. Synology already selects this mode in its YAML.
 
 Homework refreshes every five minutes. Failed school requests retry after five
 minutes, with a 15-minute login cooldown after rejected credentials and bounded

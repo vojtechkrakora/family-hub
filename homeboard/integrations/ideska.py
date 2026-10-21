@@ -16,15 +16,33 @@ BOARD = "https://www.mpvnet.cz/jikord/tab"
 STOP = {"cat": 2, "subCat": 0, "stopNum": 62683}
 
 
+def departure_time(
+    clock: str, delay: int | None, now: datetime
+) -> tuple[datetime, datetime] | None:
+    """Resolve an undated board time only when one nearby future instant fits."""
+    hour, minute = map(int, clock.split(":"))
+    candidates = {}
+    for offset in (-1, 0, 1):
+        day = now + timedelta(days=offset)
+        for fold in (0, 1):
+            scheduled = day.replace(hour=hour, minute=minute, second=0, microsecond=0, fold=fold)
+            # Reject nonexistent local times during the spring DST transition.
+            roundtrip = datetime.fromtimestamp(scheduled.timestamp(), PRAGUE)
+            if roundtrip.replace(tzinfo=None) != scheduled.replace(tzinfo=None):
+                continue
+            expected = datetime.fromtimestamp(scheduled.timestamp() + (delay or 0) * 60, PRAGUE)
+            if 0 < expected.timestamp() - now.timestamp() <= 6 * 3600:
+                candidates[scheduled.timestamp()] = (scheduled, expected)
+    # Both folds of an ambiguous autumn time must not be guessed.
+    return next(iter(candidates.values())) if len(candidates) == 1 else None
+
+
 def parse_board(html: str, now: datetime) -> dict:
     now = now.astimezone(PRAGUE)
     soup = BeautifulSoup(html, "html.parser")
     title = soup.select_one(".box-title")
     if title is None or "Nad Hejtmanem Lipová alej" not in title.get_text():
         raise ValueError("Unexpected departure board stop")
-    # The board supplies clock times without dates. Avoid guessing at rollover.
-    if not 3 <= now.hour < 21:
-        raise ValueError("Undated board outside supported daytime window")
     details = {}
     for row in soup.select(".timetable-row"):
         cells = row.select(".timetable-item")
@@ -47,17 +65,16 @@ def parse_board(html: str, now: datetime) -> dict:
         value = clock.get_text(strip=True)
         if not re.fullmatch(r"\d{2}:\d{2}", value):
             raise ValueError("Unsupported dated departure")
-        hour, minute = map(int, value.split(":"))
-        scheduled = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
         raw_delay = delay_node.get_text(strip=True)
         if raw_delay and not re.fullmatch(r"-?\d{1,3}", raw_delay):
             raise ValueError("Unknown delay notation")
         delay = int(raw_delay) if raw_delay else None
         if delay is not None and not -5 <= delay <= 180:
             raise ValueError("Unexpected delay")
-        expected = scheduled + timedelta(minutes=delay or 0)
-        if expected.timestamp() <= now.timestamp():
+        timing = departure_time(value, delay, now)
+        if timing is None:
             continue
+        scheduled, expected = timing
         trip_node = cells[0].select_one(".timetable-direction")
         trip = trip_node.get_text(strip=True) if trip_node else None
         key = expected.isoformat()
@@ -75,7 +92,7 @@ def parse_board(html: str, now: datetime) -> dict:
     return {
         "origin": "Lipová alej",
         "destination": "Strkov",
-        "departures": sorted(details),
+        "departures": sorted(details, key=lambda key: datetime.fromisoformat(key).timestamp()),
         "departure_details": details,
     }
 
@@ -137,7 +154,7 @@ class IdeskaProvider:
                                 '{"event":"vehicle_position_unavailable"}'
                             )
                     first["progress"] = self.tracker.update(
-                        now.date().isoformat() + ":" + first["line"] + ":" + str(first["trip"]), fix
+                        first["scheduled_at"] + ":" + first["line"] + ":" + str(first["trip"]), fix
                     )
                     return result
         except (httpx.HTTPError, ValueError):
