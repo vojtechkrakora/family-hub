@@ -41,24 +41,25 @@ port in the local firewall if needed. Keep the computer awake during the test.
 
 ## Docker Compose / Synology
 
-Requires Docker with the Compose plugin (Synology Container Manager on supported
-NAS models). Actual NAS deployment must still be tested.
+For **Synology Container Manager**, use the standalone `compose.synology.yaml`
+and follow [the Synology setup guide](docs/synology.md). It mounts private JSON
+files read-only and preserves live integrations and dashboard protection across
+recreates, without a startup helper. Set the NAS LAN IP and configure file
+permissions as described in the guide. Actual NAS deployment is not yet verified.
+
+For a **local demo** without private data, use `compose.yaml`:
 
 ```sh
 cp .env.example .env
 docker compose up --build -d
 docker compose ps
-docker compose logs --tail 50
 ```
 
-The default bind address is loopback. For access from your TV or phone, set
-`HOMEBOARD_BIND_IP` in `.env` to your NAS's private LAN address, then recreate
-the container with `docker compose up -d`. Open `http://<nas-lan-ip>:8091`.
-Do not configure router port forwarding. There is no authentication in this
-read-only POC with public transport and fictional family data. Add authentication before exposing private data
-or state-changing endpoints.
-
-Stop with `docker compose down`. No persistent data exists in this milestone; integration caches are in memory.
+The demo binds to loopback by default and uses mock school/calendar data.
+For the existing local Docker deployment with private integrations, continue using
+`python3 scripts/start_homeboard.py`; this helper supplies its configuration via
+the environment. The Synology file-based deployment does not use this helper.
+Integration caches remain in memory; private JSON files persist on the host.
 
 ## Configuration
 
@@ -246,7 +247,7 @@ references and limitations are documented in `docs/integrations.md`.
    Inputs are hidden. The script creates `.local/bakalari.json` with mode 0600
    inside a 0700 directory and refuses to overwrite an existing configuration.
    This directory is excluded from Git and Docker build context.
-2. For Docker, run `python3 scripts/start_homeboard.py`. It reads the local JSON,
+2. For local Docker, run `python3 scripts/start_homeboard.py`. It reads the local JSON,
    supplies it through `BAKALARI_CONFIG_JSON`, selects `SCHOOL_SOURCE=bakalari`, and
    rebuilds only Homeboard. Use this helper for subsequent Docker rebuilds with
    school integration enabled. Standard Compose without these settings uses mocks.
@@ -290,7 +291,7 @@ mode 0600, excluded from Git and Docker build context. Existing configuration is
 never overwritten. This increment reuses the existing protected Homeboard login
 configuration from the school setup; there is no new dashboard password.
 
-Run `python3 scripts/start_homeboard.py` to enable the configured calendars while
+For local Docker, run `python3 scripts/start_homeboard.py` to enable the configured calendars while
 preserving Bakaláři. The helper passes `GOOGLE_CALENDAR_CONFIG_JSON` through the
 server environment and selects `CALENDAR_SOURCE=google_ics`. Local Python execution
 reads `.local/calendar.json` (or `GOOGLE_CALENDAR_CONFIG_FILE`). Calendar activation

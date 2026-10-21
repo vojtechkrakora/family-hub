@@ -195,6 +195,7 @@ At the end of each task, provide:
 - Never stop, restart, remove or replace another project's process or container to free a port.
 - Only stop processes positively identified as belonging to Homeboard.
 - When `.local/bakalari.json` exists, deploy with `python3 scripts/start_homeboard.py` to preserve the live school/calendar sources and dashboard protection. The helper includes `.local/calendar.json` when present. Plain Compose recreation without its environment would revert to mocks.
+- For Synology Container Manager, use standalone `compose.synology.yaml` and `docs/synology.md`. It mounts private JSON read-only and enables live sources without the helper. Never merge it with local `compose.yaml` or change NAS-only file permissions on the local development configuration.
 - Never print the local school configuration or full container environment.
 
 ## 12. Working with AI-Generated Code

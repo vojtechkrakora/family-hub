@@ -79,3 +79,10 @@ with a deadline, not a separate deployed service. The existing authenticated
 dashboard displays a Prague-local daily agenda, including events overlapping
 midnight. Source URLs stay in protected server configuration. Live household feed
 retrieval and authenticated rendering were verified on 2026-10-21 with three feeds.
+
+Synology Container Manager has a standalone `compose.synology.yaml` deployment.
+It binds a protected host directory read-only at `/run/homeboard`, explicitly
+enables live integrations, and loads both configuration files through their
+`*_CONFIG_FILE` settings as non-root UID 10001. Secrets are not in the container
+environment or build context. Local Docker continues to use the existing helper.
+See `docs/synology.md` for NAS permissions and project creation instructions.
