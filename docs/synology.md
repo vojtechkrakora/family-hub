@@ -16,18 +16,14 @@ Compose validation and container file-based configuration are tested separately.
    `.local/calendar.json` into `.local` beneath that project folder. These files
    are deliberately absent from Git. Do not paste their contents into the
    Container Manager YAML editor. Never copy `.venv` or runtime caches.
-3. The container runs as UID/GID 10001. On the **NAS copy only**, give that user
-   access to the configuration. From the project folder over SSH:
-
-   ```sh
-   sudo chown -R 10001:10001 .local
-   sudo chmod 700 .local
-   sudo chmod 600 .local/bakalari.json .local/calendar.json
-   ```
-
-   Synology shared-folder ACLs must also permit access to these files. Do not
-   make them world-readable or change the container to root to bypass an error.
-   Keep a private backup: deleting the project folder would delete its secrets.
+3. No SSH, `sudo`, or ownership change is needed. The Compose project mounts
+   only these two files as read-only. It runs as root only to read files that
+   File Station may assign to an arbitrary NAS UID. The only retained Linux
+   capability is `DAC_OVERRIDE`, which permits that read; the container cannot
+   write the mounted files or its own filesystem, and `no-new-privileges` is
+   enabled. Keep the project folder private in File Station and do not share it
+   with other NAS users. Keep a private backup: deleting the project folder
+   would delete its secrets.
 4. Create `.env` in the project folder with **non-secret settings only**:
 
    ```dotenv

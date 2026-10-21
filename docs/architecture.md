@@ -81,8 +81,9 @@ midnight. Source URLs stay in protected server configuration. Live household fee
 retrieval and authenticated rendering were verified on 2026-10-21 with three feeds.
 
 Synology Container Manager has a standalone `compose.synology.yaml` deployment.
-It binds a protected host directory read-only at `/run/homeboard`, explicitly
-enables live integrations, and loads both configuration files through their
-`*_CONFIG_FILE` settings as non-root UID 10001. Secrets are not in the container
-environment or build context. Local Docker continues to use the existing helper.
-See `docs/synology.md` for NAS permissions and project creation instructions.
+It binds only the two protected configuration files read-only, explicitly enables
+live integrations, and loads them through `*_CONFIG_FILE` settings. It runs as
+root with only `DAC_OVERRIDE` so it can read File Station-created private files;
+its filesystem is read-only. Secrets are not in the container environment or
+build context. Local Docker continues to use the existing helper. See
+`docs/synology.md` for project creation instructions.

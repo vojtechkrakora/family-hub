@@ -11,19 +11,29 @@ services:
       TRANSPORT_SOURCE: ideska
       SCHOOL_SOURCE: bakalari
       CALENDAR_SOURCE: google_ics
-      BAKALARI_CONFIG_FILE: /run/homeboard/bakalari.json
-      GOOGLE_CALENDAR_CONFIG_FILE: /run/homeboard/calendar.json
+      BAKALARI_CONFIG_FILE: /run/bakalari.json
+      GOOGLE_CALENDAR_CONFIG_FILE: /run/calendar.json
     volumes:
       - type: bind
-        source: ./.local
-        target: /run/homeboard
+        source: ./.local/bakalari.json
+        target: /run/bakalari.json
         read_only: true
         bind:
           create_host_path: false
-    user: "10001:10001"
+      - type: bind
+        source: ./.local/calendar.json
+        target: /run/calendar.json
+        read_only: true
+        bind:
+          create_host_path: false
+    # Container Manager may create private files with an arbitrary NAS UID.
+    # Root is only used to read the two read-only configuration files. Uploaded
+    # files can have an arbitrary NAS UID, so DAC_OVERRIDE is needed for reading.
+    user: "0:0"
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
+    cap_add: [DAC_OVERRIDE]
     security_opt: [no-new-privileges:true]
     healthcheck:
       test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health', timeout=3)"]
