@@ -92,6 +92,9 @@ reported delay; ordering uses that estimate, retaining delayed services after th
 scheduled time. Blank delay means unknown, never zero. Unknown markup or delay
 notation fails closed. The response does not supply a vehicle observation timestamp:
 `reported_at` means board retrieval time, not GPS measurement time.
+The board uses both single-digit and padded hours (`6:58` / `06:58`); both
+formats are supported. Single-digit morning hours and matching GPS were verified
+against the public board on 2026-10-22 and covered by regression tests.
 
 The UI shows an estimated time, reported delay and original schedule. Morning
 preparation follows the estimate. This cannot predict when railway barriers open;

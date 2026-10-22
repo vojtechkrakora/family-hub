@@ -42,6 +42,15 @@ def test_missing_delay_is_not_zero_or_live():
     assert next(iter(data["departure_details"].values()))["delay_minutes"] is None
 
 
+@pytest.mark.parametrize("clock", ["7:34", "07:34"])
+def test_single_and_double_digit_hours_keep_live_departures(clock):
+    data = parse_board(board(row(clock=clock, delay="10")), NOW)
+    assert data["departures"] == ["2026-10-20T07:44:00+02:00"]
+    detail = data["departure_details"][data["departures"][0]]
+    assert detail["scheduled_at"] == "2026-10-20T07:34:00+02:00"
+    assert detail["delay_minutes"] == 10
+
+
 def test_other_direction_and_line_are_excluded():
     assert not parse_board(board(row(destination="Tábor") + row(line="42")), NOW)["departures"]
 
@@ -165,10 +174,11 @@ def test_position_failure_keeps_departure_estimate(monkeypatch):
     assert detail["progress"] is None
 
 
-def test_evening_departure_fetches_and_matches_live_gps(monkeypatch):
+@pytest.mark.parametrize("hour,clock", [(21, "21:29"), (6, "6:29")])
+def test_departure_fetches_and_matches_live_gps(monkeypatch, hour, clock):
     from homeboard.integrations import ideska
 
-    now = NOW.replace(hour=21, minute=26)
+    now = NOW.replace(hour=hour, minute=26)
 
     class Clock(datetime):
         @classmethod
@@ -194,7 +204,7 @@ def test_evening_departure_fetches_and_matches_live_gps(monkeypatch):
                     ]
                 },
             )
-        html = board(row(clock="21:29", delay="")).replace(
+        html = board(row(clock=clock, delay="")).replace(
             "<div>45</div>", '<div>45</div><div class="timetable-direction">81</div>'
         )
         return httpx.Response(200, text=html, request=request)

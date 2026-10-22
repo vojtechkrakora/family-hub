@@ -63,7 +63,7 @@ def parse_board(html: str, now: datetime) -> dict:
         if clock is None or delay_node is None:
             raise ValueError("Missing departure timing")
         value = clock.get_text(strip=True)
-        if not re.fullmatch(r"\d{2}:\d{2}", value):
+        if not re.fullmatch(r"\d{1,2}:\d{2}", value):
             raise ValueError("Unsupported dated departure")
         raw_delay = delay_node.get_text(strip=True)
         if raw_delay and not re.fullmatch(r"-?\d{1,3}", raw_delay):
