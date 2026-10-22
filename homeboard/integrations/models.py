@@ -56,3 +56,14 @@ class CalendarEvent(IntegrationData):
 
 class CalendarData(IntegrationData):
     events: list[CalendarEvent] = Field(max_length=100)
+
+
+class WeatherData(IntegrationData):
+    temperature: float = Field(ge=-60, le=60, allow_inf_nan=False)
+    feels_like: float = Field(ge=-80, le=70, allow_inf_nan=False)
+    minimum_feels_like: float = Field(ge=-80, le=70, allow_inf_nan=False)
+    wet: bool
+    clothing: list[Literal["winter-coat", "jacket", "hoodie", "tshirt", "hat", "raincoat"]] = Field(
+        max_length=3
+    )
+    valid_until: AwareDatetime

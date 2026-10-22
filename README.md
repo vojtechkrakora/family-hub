@@ -41,11 +41,13 @@ port in the local firewall if needed. Keep the computer awake during the test.
 
 ## Docker Compose / Synology
 
-For **Synology Container Manager**, use the standalone `compose.synology.yaml`
-and follow [the Synology setup guide](docs/synology.md). It mounts private JSON
+For **Synology Container Manager**, upload the standalone
+`compose.synology.yaml` under the name `compose.yaml` and follow
+[the Synology setup guide](docs/synology.md). It mounts private JSON
 files read-only and preserves live integrations and the chosen login mode across
 recreates. Upload the complete project and the two private configuration files,
-import the Synology YAML, and build/start. No `.env`, IP substitution, SSH,
+create the project from that Synology YAML, and build/start. Do not upload the
+local-development `compose.yaml` to the NAS. No `.env`, IP substitution, SSH,
 ownership commands or startup helper are needed. Port 8091 is published on the
 NAS network interfaces. Actual NAS deployment is not yet verified.
 The Synology definition sets `HOMEBOARD_AUTH_MODE: disabled` for TV browsers:
@@ -67,6 +69,25 @@ the environment. The Synology file-based deployment does not use this helper.
 Integration caches remain in memory; private JSON files persist on the host.
 
 ## Configuration
+
+### Weather and clothing
+
+The clock column includes a Czech pictorial "Na ven" panel for Plana nad Luznici.
+Open-Meteo supplies a model forecast without an account or API key. It refreshes
+every 15 minutes; the API is called only by the backend. The current temperature
+and feels-like temperature accompany up to three local SVG clothing icons.
+Recommendations use the lowest feels-like temperature now and over the next three
+hours: below 5°C a warm coat, below 12°C a jacket, below 20°C a hoodie, otherwise
+a T-shirt. Below 7°C add a hat. Current precipitation, at least 50% forecast
+precipitation probability or at least 0.2 mm in an upcoming hour adds a raincoat.
+These are simple outer-layer suggestions, not a complete outfit or school-day
+forecast; an adult can adjust them to the child and activity.
+
+Weather failures do not interrupt buses, homework or calendars. Old/missing
+weather suppresses clothing advice. There is no separate setup on Synology;
+`WEATHER_SOURCE=disabled` explicitly turns the integration off. The on-screen
+Open-Meteo link credits the forecast source. Actual LG browser readability still
+requires testing on the TV.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |

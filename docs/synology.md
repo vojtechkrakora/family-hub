@@ -1,7 +1,9 @@
 # Synology Container Manager
 
 Use **compose.synology.yaml as a standalone project**, not as an override for
-compose.yaml. It enables live transport, school and calendar sources explicitly.
+the local-development compose.yaml. When copying it into the Synology project
+folder, rename it to **compose.yaml** because Container Manager expects that
+filename. It enables live transport, school and calendar sources explicitly.
 Secrets are read from two read-only file mounts, never injected into the
 container environment or copied into the image. No Python installation or startup
 helper is required on the NAS. Actual Synology deployment remains unverified;
@@ -20,9 +22,12 @@ live source selection.
    Copy the complete `homeboard/static` directory, including its `icons`
    subdirectory. The image build checks that required frontend assets exist.
 2. Separately copy the existing private `.local/bakalari.json` and
-   `.local/calendar.json` into `.local` beneath that project folder. These files
-   are deliberately absent from Git. Do not paste their contents into the
-   Container Manager YAML editor. Never copy `.venv` or runtime caches.
+   `.local/calendar.json` from the development computer directly into the NAS
+   project folder, preserving the filenames. They must sit beside `Dockerfile`
+   and the Synology `compose.yaml`; no hidden or additional folder is needed. Both
+   filenames are excluded from Git and Docker build context. Do not paste file
+   contents into the Container Manager YAML editor. Never copy `.venv` or
+   runtime caches.
 3. No SSH, `sudo`, or ownership change is needed. The Compose project mounts
    only these two files as read-only. It runs as root only to read files that
    File Station may assign to an arbitrary NAS UID. The only retained Linux
@@ -40,10 +45,14 @@ live source selection.
 
 ## Create the Container Manager project
 
-In **Container Manager → Project → Create**, name the project `homeboard`, select
-that repository folder as its **Path**, and import the contents of
-`compose.synology.yaml` as the project's Compose YAML. Container Manager may save
-this as `docker-compose.yml`; this is expected. Use this definition alone.
+Before creating the project, copy `compose.synology.yaml` from the repository to
+the NAS project folder **as `compose.yaml`**. Do not copy the repository's local
+`compose.yaml`; that definition uses mock integrations and different local
+settings.
+
+In **Container Manager → Project → Create**, name the project `homeboard` and
+select that folder as its **Path**. Container Manager loads its `compose.yaml`.
+Use this definition alone.
 Build and start the project. These controls are documented in
 [Synology's Project guide](https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project).
 
@@ -81,9 +90,14 @@ restart the Homeboard project to reload it. No startup helper is needed.
   does not copy new source files. Remove any manually added mount targeting
   `/app` or `/app/homeboard`, which would hide the files built into the image.
   The supplied Synology Compose mounts only the two private JSON files.
-- Missing `.local`: the mount fails instead of silently creating a new directory.
+- Missing `bakalari.json` or `calendar.json` beside `Dockerfile`: the mount or
+  application startup fails instead of silently switching to demo data. Upload
+  both individual files into the project folder before building the project.
 - Missing, malformed or unreadable JSON: application startup fails with a
   sanitized configuration error; it never silently switches to mock data.
+- Bakaláři unexpectedly switch to mock data or fail after recreating the
+  project: verify that the NAS file named `compose.yaml` is the content of the
+  repository's `compose.synology.yaml`, not its local-development `compose.yaml`.
 - Both configuration files are required in this household deployment. Keep the
   existing school JSON unchanged, including its dashboard password field; it is
   unused for access when authentication is disabled.

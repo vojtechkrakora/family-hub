@@ -6,6 +6,7 @@
   var failed = false;
   var pragueOffset = 0;
   var activeStage = '';
+  var weatherKey = '';
   var agendaLimit = 4;
   var weekdays = ['Neděle', 'Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota'];
   var stages = {
@@ -69,6 +70,29 @@
     if (state.last_success) { label += ' · ' + timeLabel(state.last_success); }
     return label;
   }
+  function showWeather(now, disconnected) {
+    var state = data.integrations.weather;
+    var weather = data.weather;
+    var ready = !disconnected && state && state.status === 'available' && weather && Date.parse(weather.valid_until) > now;
+    var key = ready ? JSON.stringify(weather) : 'unavailable:' + (state && state.status);
+    if (key === weatherKey) { return; }
+    weatherKey = key;
+    var clothes = document.getElementById('weather-clothes'); clothes.textContent = '';
+    text('weather-temperature', ready ? Math.round(weather.temperature) + '°' : '—');
+    if (!ready) {
+      text('weather-note', state && state.status === 'stale' ? 'Starší počasí · ověří dospělý' : 'Počasí není dostupné');
+      return;
+    }
+    text('weather-note', 'Pocitově ' + Math.round(weather.feels_like) + '° · ' + (weather.wet ? 'Hrozí srážky' : 'Příští 3 hodiny'));
+    var labels = {'winter-coat': 'Teplá bunda', jacket: 'Bunda', hoodie: 'Mikina', tshirt: 'Tričko', hat: 'Čepice', raincoat: 'Pláštěnka'};
+    weather.clothing.forEach(function (name) {
+      if (!labels[name]) { return; }
+      var figure = document.createElement('div');
+      var icon = document.createElement('img'); icon.src = '/static/icons/' + name + '.svg'; icon.alt = labels[name];
+      var label = document.createElement('span'); label.textContent = labels[name];
+      figure.appendChild(icon); figure.appendChild(label); clothes.appendChild(figure);
+    });
+  }
   function render() {
     var school = document.getElementById('homework'); school.textContent = '';
     data.homework.slice(0, agendaLimit).forEach(function (task) {
@@ -128,6 +152,7 @@
     document.getElementById('hour-hand').setAttribute('transform', 'rotate(' + ((hours % 12) * 30 + minutes / 2) + ' 100 100)');
     document.getElementById('minute-hand').setAttribute('transform', 'rotate(' + minutes * 6 + ' 100 100)');
     var stale = failed || elapsed > 45000;
+    showWeather(now, stale);
     var mapTransport = data.transport;
     var mapDeparture = mapTransport && mapTransport.departures[0];
     var mapDetail = mapDeparture && (mapTransport.departure_details || {})[mapDeparture];

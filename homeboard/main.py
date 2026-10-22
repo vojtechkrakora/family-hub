@@ -17,9 +17,10 @@ from homeboard.integrations.bakalari import BakalariProvider, BakalariSettings, 
 from homeboard.integrations.comett import ComettProvider
 from homeboard.integrations.google_calendar import GoogleCalendarProvider, load_calendar_settings
 from homeboard.integrations.ideska import IdeskaProvider
-from homeboard.integrations.models import CalendarData, SchoolData, TransportData
+from homeboard.integrations.models import CalendarData, SchoolData, TransportData, WeatherData
 from homeboard.integrations.service import CachedIntegration, Provider
 from homeboard.integrations.vehicle import needs_fast_refresh
+from homeboard.integrations.weather import WeatherProvider
 from homeboard.providers import (
     PRAGUE,
     MockCalendarProvider,
@@ -135,6 +136,20 @@ def create_app(integrations: dict[str, CachedIntegration] | None = None) -> Fast
     )
     if set(sources) != {"transport", "school", "calendar"}:
         raise ValueError("Transport, school and calendar integration slots are required")
+    weather_source = os.environ.get("WEATHER_SOURCE", "open_meteo")
+    if weather_source not in {"open_meteo", "disabled"}:
+        raise ValueError("WEATHER_SOURCE must be open_meteo or disabled")
+    sources = dict(
+        sources,
+        weather=CachedIntegration(
+            "weather",
+            WeatherProvider() if weather_source == "open_meteo" else None,
+            WeatherData,
+            900,
+            timeout_seconds=4,
+            retry_seconds=300,
+        ),
+    )
     walking = read_minutes("WALKING_MINUTES", 1)
     dressing = read_minutes("DRESSING_MINUTES", 10)
     shoes = read_minutes("SHOES_MINUTES", 3)
@@ -196,6 +211,7 @@ def create_app(integrations: dict[str, CachedIntegration] | None = None) -> Fast
         events.sort(key=lambda item: datetime.fromisoformat(item["starts_at"]).timestamp())
         return {
             "generated_at": now.isoformat(),
+            "weather": states["weather"]["data"],
             "integrations": {
                 name: {key: value for key, value in state.items() if key != "data"}
                 for name, state in states.items()

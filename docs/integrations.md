@@ -192,6 +192,20 @@ currently supplies this password even for calendar-only operation. Secret links
 and raw event bodies must not appear in logs, fixtures or diagnostic screenshots.
 See README for local setup, TV limits and unsupported OAuth/non-Google feeds.
 
+## Weather
+
+The [Open-Meteo forecast API](https://open-meteo.com/en/docs) provides model-based
+current temperature, apparent temperature and WMO weather code, plus hourly
+apparent temperature, precipitation probability and precipitation. Requests use
+49.35, 14.72 (town coordinates), Europe/Prague and Unix timestamps to avoid DST
+ambiguity. No family data or credentials are sent. The normalized three-hour
+window uses elapsed timestamps; a forecast older than one hour or incomplete
+hourly data is rejected. The shared integration cache refreshes every 900 seconds,
+retries failures after 300 seconds and bounds each fetch to four seconds and
+200 KB. Failed refreshes retain stale data but the UI suppresses clothing advice.
+The endpoint and response fields were verified live on 2026-10-22. Source
+attribution is visible beneath the clothing panel. See README for thresholds.
+
 ## LG webOS
 
 [Home Assistant's webOS documentation](https://www.home-assistant.io/integrations/webostv/)

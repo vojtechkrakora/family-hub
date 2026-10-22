@@ -1,4 +1,5 @@
-# Standalone Container Manager project; do not merge with compose.yaml.
+# Standalone Container Manager project. Upload it to Synology as compose.yaml;
+# do not merge it with the repository's local-development compose.yaml.
 services:
   homeboard:
     build: .
@@ -17,13 +18,13 @@ services:
       GOOGLE_CALENDAR_CONFIG_FILE: /run/calendar.json
     volumes:
       - type: bind
-        source: ./.local/bakalari.json
+        source: ./bakalari.json
         target: /run/bakalari.json
         read_only: true
         bind:
           create_host_path: false
       - type: bind
-        source: ./.local/calendar.json
+        source: ./calendar.json
         target: /run/calendar.json
         read_only: true
         bind:

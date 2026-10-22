@@ -81,7 +81,8 @@ midnight. Source URLs stay in protected server configuration. Live household fee
 retrieval and authenticated rendering were verified on 2026-10-21 with three feeds.
 
 Synology Container Manager has a standalone `compose.synology.yaml` deployment.
-It binds only the two protected configuration files read-only, explicitly enables
+It binds only the two protected files stored beside the NAS Compose definition
+read-only, explicitly enables
 live integrations, and loads them through `*_CONFIG_FILE` settings. It runs as
 root with only `DAC_OVERRIDE` so it can read File Station-created private files;
 its filesystem is read-only. Secrets are not in the container environment or
@@ -89,6 +90,10 @@ build context. Local Docker continues to use the existing helper. See
 `docs/synology.md` for project creation instructions.
 The Synology definition is self-contained: it publishes host port 8091 on all
 NAS interfaces and uses literal defaults, independent of local `.env` files.
+Weather is an independent cached Open-Meteo adapter, enabled by default without
+credentials. It adds a normalized `weather` payload and integration status to
+the dashboard. Pure clothing rules operate on a three-hour forecast; the browser
+renders local SVG icons and suppresses advice when data expires or refresh fails.
 It explicitly sets `HOMEBOARD_AUTH_MODE=disabled` for the household TV, allowing
 page, asset and API access without a browser login. The application defaults to
 `disabled` everywhere and rejects unknown modes. Basic login requires an explicit

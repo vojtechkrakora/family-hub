@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Homeboard · Dobré ráno</title>
-  <link rel="stylesheet" href="/static/style.css?v=agenda-4">
+  <link rel="stylesheet" href="/static/style.css?v=weather-2">
   <script src="/static/minimap.js" defer></script>
-  <script src="/static/app.js?v=agenda-4" defer></script>
+  <script src="/static/app.js?v=weather-1" defer></script>
 </head>
 <body>
   <header><div class="brand">homeboard <span>Dobré ráno!</span></div><span id="transport-source" class="demo">Načítání zdroje odjezdů</span></header>
@@ -22,6 +22,12 @@
           <path id="minute-hand" d="M100 100V34" stroke="#e7eee6" stroke-width="5" stroke-linecap="round"/>
           <circle cx="100" cy="100" r="7" fill="#f5e4b1"/>
         </svg>
+        <section class="weather" aria-label="Počasí a oblečení na ven">
+          <div class="weather-heading"><span>Na ven</span><strong id="weather-temperature">—</strong></div>
+          <p id="weather-note">Načítání počasí</p>
+          <div id="weather-clothes" class="weather-clothes"></div>
+          <a class="weather-credit" href="https://open-meteo.com/">Předpověď · Open-Meteo</a>
+        </section>
       </div>
       <div id="action" class="action waiting" role="status" aria-live="polite">
         <span class="now-label">TEĎ</span>
